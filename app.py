@@ -13,8 +13,7 @@ from functools import wraps
 from dotenv import load_dotenv
 from flask import Blueprint
 
-# --- CHANGE THIS LINE ---
-# Remove the url_prefix. The middleware will handle the pathing.
+# Create the blueprint object first.
 app_bp = Blueprint('app_bp', __name__)
 
 load_dotenv()
@@ -28,10 +27,6 @@ supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY) if SUPABASE_URL and
 # This is the main app object Vercel will look for.
 app = Flask(__name__)
 app.secret_key = os.getenv('SECRET_KEY', 'changeme')
-
-# Register the blueprint to the main app.
-# Flask's url_for will now generate relative paths like '/login' instead of '/puspajak-gen/login'
-app.register_blueprint(app_bp)
 
 
 # In-memory stores (replace with DB in production)
@@ -89,7 +84,7 @@ def login_required(f):
     return decorated
 
 # --- Routes ---
-# This is now the root of the blueprint, which will be served from /puspajak-gen/
+# Define all routes on the blueprint BEFORE it is registered.
 @app_bp.route('/', methods=['GET', 'POST'])
 def index():
     if request.method == 'POST':
@@ -232,6 +227,7 @@ def generate():
             except Exception as e:
                 result = f"Exception saat menghubungi Gemini/Gemma API: {e}"
     return render_template('generate.html', result=result, remaining=credit)
+
 @app_bp.route('/history')
 @login_required
 def history():
@@ -247,6 +243,10 @@ def history():
 def logout():
     session.clear()
     return redirect(url_for('app_bp.index'))
+
+# --- CORRECTED STRUCTURE ---
+# Register the blueprint with the main app AFTER all routes are defined.
+app.register_blueprint(app_bp)
 
 # This block is for local development and is ignored by Vercel
 if __name__ == '__main__':
