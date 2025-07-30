@@ -13,7 +13,9 @@ from functools import wraps
 from dotenv import load_dotenv
 from flask import Blueprint
 
-app_bp = Blueprint('app_bp', __name__, url_prefix='/puspajak-gen')
+# --- CHANGE THIS LINE ---
+# Remove the url_prefix. The middleware will handle the pathing.
+app_bp = Blueprint('app_bp', __name__)
 
 load_dotenv()
 
@@ -23,8 +25,13 @@ SUPABASE_KEY = os.getenv('SUPABASE_KEY')
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY) if SUPABASE_URL and SUPABASE_KEY else None
 
 
+# This is the main app object Vercel will look for.
 app = Flask(__name__)
 app.secret_key = os.getenv('SECRET_KEY', 'changeme')
+
+# Register the blueprint to the main app.
+# Flask's url_for will now generate relative paths like '/login' instead of '/puspajak-gen/login'
+app.register_blueprint(app_bp)
 
 
 # In-memory stores (replace with DB in production)
@@ -82,6 +89,7 @@ def login_required(f):
     return decorated
 
 # --- Routes ---
+# This is now the root of the blueprint, which will be served from /puspajak-gen/
 @app_bp.route('/', methods=['GET', 'POST'])
 def index():
     if request.method == 'POST':
@@ -240,6 +248,6 @@ def logout():
     session.clear()
     return redirect(url_for('app_bp.index'))
 
+# This block is for local development and is ignored by Vercel
 if __name__ == '__main__':
-    app.register_blueprint(app_bp)
     app.run(debug=True)
