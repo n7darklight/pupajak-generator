@@ -11,7 +11,9 @@ from supabase import create_client, Client
 from datetime import datetime
 from functools import wraps
 from dotenv import load_dotenv
+from flask import Blueprint
 
+app_bp = Blueprint('app_bp', __name__, url_prefix='/puspajak-gen')
 
 load_dotenv()
 
@@ -75,12 +77,12 @@ def login_required(f):
     @wraps(f)
     def decorated(*args, **kwargs):
         if 'email' not in session or 'token' not in session:
-            return redirect(url_for('index'))
+            return redirect(url_for('app_bp.index'))
         return f(*args, **kwargs)
     return decorated
 
 # --- Routes ---
-@app.route('/', methods=['GET', 'POST'])
+@app_bp.route('/', methods=['GET', 'POST'])
 def index():
     if request.method == 'POST':
         email = request.form.get('email', '').strip().lower()
@@ -113,7 +115,7 @@ def index():
         return render_template('index.html')
     return render_template('index.html')
 
-@app.route('/login', methods=['POST'])
+@app_bp.route('/login', methods=['POST'])
 def login():
     email = request.form.get('email', '').strip().lower()
     token = request.form.get('token', '').strip()
@@ -133,7 +135,7 @@ def login():
             session['user_id'] = user['id']
             print(f"[DEBUG] Login success, session: {dict(session)}")
             flash(f"[DEBUG] Login success, session: {dict(session)}", 'info')
-            return redirect(url_for('generate'))
+            return redirect(url_for('app_bp.generate'))
         else:
             print(f"[DEBUG] Token mismatch: input={token}, db={db_token}")
             flash(f'Token tidak cocok. (Input: "{token}", DB: "{db_token}")', 'danger')
@@ -141,9 +143,9 @@ def login():
         print(f"[DEBUG] Email not found: {email}")
         flash('Email tidak ditemukan.', 'danger')
     print(f"[DEBUG] Session after login: {dict(session)}")
-    return redirect(url_for('index'))
+    return redirect(url_for('app_bp.index'))
 
-@app.route('/generate', methods=['GET', 'POST'])
+@app_bp.route('/generate', methods=['GET', 'POST'])
 @login_required
 def generate():
     print(f"[DEBUG] Session at /generate: {dict(session)}")
@@ -151,7 +153,7 @@ def generate():
     user_id = session.get('user_id')
     if not email or not user_id:
         flash(f"[DEBUG] Session missing at /generate: {dict(session)}", 'danger')
-        return redirect(url_for('index'))
+        return redirect(url_for('app_bp.index'))
     # Get user credit from Supabase
     credit = 0
     if supabase and user_id:
@@ -222,7 +224,7 @@ def generate():
             except Exception as e:
                 result = f"Exception saat menghubungi Gemini/Gemma API: {e}"
     return render_template('generate.html', result=result, remaining=credit)
-@app.route('/history')
+@app_bp.route('/history')
 @login_required
 def history():
     user_id = session.get('user_id')
@@ -233,10 +235,11 @@ def history():
             history = res.data
     return render_template('history.html', history=history)
 
-@app.route('/logout')
+@app_bp.route('/logout')
 def logout():
     session.clear()
-    return redirect(url_for('index'))
+    return redirect(url_for('app_bp.index'))
 
 if __name__ == '__main__':
+    app.register_blueprint(app_bp)
     app.run(debug=True)
