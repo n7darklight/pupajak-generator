@@ -118,17 +118,24 @@ def index():
         return render_template('index.html')
     return render_template('index.html')
 
-@app_bp.route('/login', methods=['POST'])
+# --- MODIFIED ROUTE ---
+# Allow GET requests to gracefully redirect to the homepage.
+@app_bp.route('/login', methods=['GET', 'POST'])
 def login():
+    # If a user tries to visit /login directly, send them to the homepage.
+    if request.method == 'GET':
+        return redirect(url_for('app_bp.index'))
+
+    # Handle the form submission
     email = request.form.get('email', '').strip().lower()
     token = request.form.get('token', '').strip()
-    # Validate token from Supabase (case-sensitive, no extra whitespace)
+    
     user = None
     if supabase:
-        # Fetch user by email only, then compare token in Python for full control
         res = supabase.table('poet_data').select('*').eq('email', email).execute()
         if res.data:
             user = res.data[0]
+            
     if user:
         db_token = user['token'].strip()
         print(f"[DEBUG] Login: email={email}, input_token={token}, db_token={db_token}")
@@ -137,7 +144,6 @@ def login():
             session['token'] = db_token
             session['user_id'] = user['id']
             print(f"[DEBUG] Login success, session: {dict(session)}")
-            flash(f"[DEBUG] Login success, session: {dict(session)}", 'info')
             return redirect(url_for('app_bp.generate'))
         else:
             print(f"[DEBUG] Token mismatch: input={token}, db={db_token}")
@@ -145,7 +151,7 @@ def login():
     else:
         print(f"[DEBUG] Email not found: {email}")
         flash('Email tidak ditemukan.', 'danger')
-    print(f"[DEBUG] Session after login: {dict(session)}")
+        
     return redirect(url_for('app_bp.index'))
 
 @app_bp.route('/generate', methods=['GET', 'POST'])
