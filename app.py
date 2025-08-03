@@ -120,7 +120,7 @@ def index():
 
 # --- MODIFIED ROUTE ---
 # Allow GET requests to gracefully redirect to the homepage.
-@app_bp.route('/login', methods=['GET', 'POST'])
+@app_bp.route('/login-puspajak', methods=['GET', 'POST'])
 def login():
     # If a user tries to visit /login directly, send them to the homepage.
     if request.method == 'GET':
@@ -154,7 +154,7 @@ def login():
         
     return redirect(url_for('app_bp.index'))
 
-@app_bp.route('/generate', methods=['GET', 'POST'])
+@app_bp.route('/generate-puspajak', methods=['GET', 'POST'])
 @login_required
 def generate():
     print(f"[DEBUG] Session at /generate: {dict(session)}")
@@ -234,7 +234,7 @@ def generate():
                 result = f"Exception saat menghubungi Gemini/Gemma API: {e}"
     return render_template('generate.html', result=result, remaining=credit)
 
-@app_bp.route('/history')
+@app_bp.route('/history-puspajak')
 @login_required
 def history():
     user_id = session.get('user_id')
@@ -245,7 +245,7 @@ def history():
             history = res.data
     return render_template('history.html', history=history)
 
-@app_bp.route('/logout')
+@app_bp.route('/logout-puspajak')
 def logout():
     session.clear()
     return redirect(url_for('app_bp.index'))
