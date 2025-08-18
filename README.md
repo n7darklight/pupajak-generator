@@ -15,6 +15,6 @@ This is a simple Flask web app for generating Indonesian puisi, pantun, or sajak
 3. Enter your email, get access token, and generate puisi, pantun, or sajak by entering a title/theme.
 
 ## Contact
-For more credits, contact: your@email.com
+For more credits, contact: n7.metaaqcuitition@gmail.com
 
 ---
